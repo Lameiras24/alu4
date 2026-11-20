@@ -8,7 +8,7 @@ def alu_reference(a, b, op):
     carry = 0
     overflow = 0
 
-    if op == 0:  # ADD
+    if op == 0:
         result = a + b
         y = result & 0xF
         carry = (result >> 4) & 1
@@ -17,7 +17,7 @@ def alu_reference(a, b, op):
             ((a ^ y) & 8) != 0
         )
 
-    elif op == 1:  # SUB
+    elif op == 1:
         y = (a - b) & 0xF
         carry = int(a >= b)
         overflow = int(
@@ -25,22 +25,22 @@ def alu_reference(a, b, op):
             ((a ^ y) & 8) != 0
         )
 
-    elif op == 2:  # AND
+    elif op == 2:
         y = a & b
 
-    elif op == 3:  # OR
+    elif op == 3:
         y = a | b
 
-    elif op == 4:  # XOR
+    elif op == 4:
         y = a ^ b
 
-    elif op == 5:  # NOT
+    elif op == 5:
         y = (~a) & 0xF
 
-    elif op == 6:  # SHIFT LEFT
+    elif op == 6:
         y = (a << 1) & 0xF
 
-    elif op == 7:  # SHIFT RIGHT
+    elif op == 7:
         y = a >> 1
 
     zero = int(y == 0)
@@ -60,7 +60,8 @@ async def test_alu4(dut):
     dut.clk.value = 0
     dut.rst_n.value = 1
 
-    # Test all 2048 combinations
+    await Timer(10, unit="ns")
+
     for a in range(16):
         for b in range(16):
             for op in range(8):
@@ -70,15 +71,29 @@ async def test_alu4(dut):
 
                 await Timer(10, unit="ns")
 
+                # Read output as binary string
+                output_bits = str(dut.uo_out.value)
+
+                # Detect X and Z values
+                assert all(bit in "01" for bit in output_bits), (
+                    f"UNKNOWN OUTPUT: A={a}, B={b}, OP={op}, "
+                    f"uo_out={output_bits}"
+                )
+
+                actual = int(output_bits, 2)
                 expected = alu_reference(a, b, op)
-                actual = int(dut.uo_out.value)
 
                 assert actual == expected, (
                     f"FAIL: A={a}, B={b}, OP={op}, "
-                    f"Expected={expected}, Actual={actual}"
+                    f"Expected={expected:08b}, "
+                    f"Actual={actual:08b}"
                 )
 
-    # Check unused bidirectional outputs
-    assert int(dut.uio_oe.value) == 0
+    # Check bidirectional outputs
+    oe_bits = str(dut.uio_oe.value)
+
+    assert oe_bits == "00000000", (
+        f"Unexpected uio_oe: {oe_bits}"
+    )
 
     dut._log.info("PASS: All 2048 ALU4 tests passed!")
