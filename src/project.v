@@ -5,7 +5,7 @@
 
 `default_nettype none
 
-module tt_um_alu (
+module tt_um_alu4 (
     input  wire [3:0] A,
     input  wire [3:0] B,
     input  wire [2:0] OP,
