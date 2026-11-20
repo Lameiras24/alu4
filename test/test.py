@@ -1,40 +1,104 @@
-# SPDX-FileCopyrightText: © 2024 Tiny Tapeout
-# SPDX-License-Identifier: Apache-2.0
 
 import cocotb
-from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles
+from cocotb.triggers import Timer
+
+
+def alu_reference(a, b, op):
+
+    y = 0
+    carry = 0
+    overflow = 0
+
+    # ADD
+    if op == 0:
+        result = a + b
+        y = result & 0xF
+        carry = (result >> 4) & 1
+
+        overflow = int(
+            ((a ^ b) & 0x8) == 0 and
+            ((a ^ y) & 0x8) != 0
+        )
+
+    # SUB
+    elif op == 1:
+        y = (a - b) & 0xF
+        carry = int(a >= b)
+
+        overflow = int(
+            ((a ^ b) & 0x8) != 0 and
+            ((a ^ y) & 0x8) != 0
+        )
+
+    # AND
+    elif op == 2:
+        y = a & b
+
+    # OR
+    elif op == 3:
+        y = a | b
+
+    # XOR
+    elif op == 4:
+        y = a ^ b
+
+    # NOT
+    elif op == 5:
+        y = (~a) & 0xF
+
+    # SHIFT LEFT
+    elif op == 6:
+        y = (a << 1) & 0xF
+
+    # SHIFT RIGHT
+    elif op == 7:
+        y = (a >> 1) & 0xF
+
+    zero = int(y == 0)
+
+    return y, carry, zero, overflow
 
 
 @cocotb.test()
-async def test_project(dut):
-    dut._log.info("Start")
+async def test_alu(dut):
 
-    # Set the clock period to 10 us (100 KHz)
-    clock = Clock(dut.clk, 10, unit="us")
-    cocotb.start_soon(clock.start())
-
-    # Reset
-    dut._log.info("Reset")
     dut.ena.value = 1
-    dut.ui_in.value = 0
-    dut.uio_in.value = 0
-    dut.rst_n.value = 0
-    await ClockCycles(dut.clk, 10)
+    dut.clk.value = 0
     dut.rst_n.value = 1
 
-    dut._log.info("Test project behavior")
+    for a in range(16):
 
-    # Set the input values you want to test
-    dut.ui_in.value = 20
-    dut.uio_in.value = 30
+        for b in range(16):
 
-    # Wait for one clock cycle to see the output values
-    await ClockCycles(dut.clk, 1)
+            for op in range(8):
 
-    # The following assersion is just an example of how to check the output values.
-    # Change it to match the actual expected output of your module:
-    assert dut.uo_out.value == 50
+                # Set operands
+                dut.ui_in.value = (b << 4) | a
 
-    # Keep testing the module by changing the input values, waiting for
-    # one or more clock cycles, and asserting the expected output values.
+                # Set operation
+                dut.uio_in.value = op
+
+                # Allow combinational logic to settle
+                await Timer(10, unit="ns")
+
+                expected = alu_reference(a, b, op)
+
+                result = int(dut.uo_out.value)
+
+                actual = (
+                    result & 0xF,
+                    (result >> 4) & 1,
+                    (result >> 5) & 1,
+                    (result >> 6) & 1
+                )
+
+                assert actual == expected, (
+                    f"FAIL: A={a}, B={b}, OP={op}, "
+                    f"expected={expected}, actual={actual}"
+                )
+
+    assert int(dut.uio_oe.value) == 0
+
+    dut._log.info(
+        "PASS: All 2048 ALU test cases passed!"
+    )
