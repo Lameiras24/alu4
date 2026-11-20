@@ -1,7 +1,7 @@
 # Tiny Tapeout project information
 project:
   title: "4-bit ALU"
-  author: "Your Name"
+  author: "Lameiras24"
   discord: ""
   description: "4-bit arithmetic logic unit supporting ADD, SUB, AND, OR, XOR, NOT, SLL and SRL"
   language: "Verilog"
