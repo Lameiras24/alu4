@@ -26,12 +26,16 @@ module tb;
     );
 
     initial begin
-        ui_in  = 8'b0;
-        uio_in = 8'b0;
-        ena    = 1'b1;
-        clk    = 1'b0;
-        rst_n  = 1'b1;
-    end
+    ui_in  = 8'b0;
+    uio_in = 8'b0;
+    ena    = 1'b1;
+    clk    = 1'b0;
+    rst_n  = 1'b1;
+
+    #1;
+    $display("DEBUG: ui_in=%b uio_in=%b uo_out=%b",
+             ui_in, uio_in, uo_out);
+end
 
 endmodule
 
