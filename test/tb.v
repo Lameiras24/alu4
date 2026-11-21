@@ -1,6 +1,8 @@
 
 `default_nettype none
 
+`timescale 1ns / 1ps
+
 module tb;
 
     reg [7:0] ui_in;
@@ -14,7 +16,16 @@ module tb;
     reg clk;
     reg rst_n;
 
+`ifdef GL_TEST
+    wire VPWR = 1'b1;
+    wire VGND = 1'b0;
+`endif
+
     tt_um_alu4 dut (
+`ifdef GL_TEST
+        .VPWR(VPWR),
+        .VGND(VGND),
+`endif
         .ui_in(ui_in),
         .uo_out(uo_out),
         .uio_in(uio_in),
@@ -26,16 +37,12 @@ module tb;
     );
 
     initial begin
-    ui_in  = 8'b0;
-    uio_in = 8'b0;
-    ena    = 1'b1;
-    clk    = 1'b0;
-    rst_n  = 1'b1;
-
-    #1;
-    $display("DEBUG: ui_in=%b uio_in=%b uo_out=%b",
-             ui_in, uio_in, uo_out);
-end
+        ui_in  = 8'b0;
+        uio_in = 8'b0;
+        ena    = 1'b1;
+        clk    = 1'b0;
+        rst_n  = 1'b1;
+    end
 
 endmodule
 
